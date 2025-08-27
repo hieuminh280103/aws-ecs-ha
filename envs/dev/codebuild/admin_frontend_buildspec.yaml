@@ -1,0 +1,24 @@
+version: 0.2
+shell: bash
+phases:
+  pre_build:
+    commands:
+      - echo Installing dependencies...
+      - npm install
+    on-failure: ABORT
+  build:
+    commands:
+      - echo "Collect env from Secret Manager"
+      - SECRET_STRING=$(aws secretsmanager get-secret-value --secret-id $SECRETS_MANAGER --output json | jq -r '.SecretString')
+      - for k in `echo $SECRET_STRING | jq -r 'keys[]'`; do value=$(echo $SECRET_STRING | jq -r ".$k"); echo $k=$value >> ./.env; done
+      - echo Build started on `date`
+      - npm run build
+      - echo Build completed on `date`
+    on-failure: ABORT
+  post_build:
+    commands:
+      - aws s3 sync . s3://$FRONTEND_S3/
+      - echo Clear cloudfront cache completed on `date`
+      - INVALIDATION_ID=$(aws cloudfront create-invalidation --distribution-id $CLOUDFRONT_DISTRIBUTION_ID --paths "/*" --query 'Invalidation.Id' --output text)
+      - aws cloudfront wait invalidation-completed --distribution-id $CLOUDFRONT_DISTRIBUTION_ID --id $INVALIDATION_ID 
+    on-failure: ABORT

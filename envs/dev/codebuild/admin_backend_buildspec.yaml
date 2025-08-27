@@ -1,0 +1,28 @@
+version: 0.2
+phases:
+  pre_build:
+    commands:
+      - aws --version
+      - AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query 'Account' --output text)
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+      - REPOSITORY_URI=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$REPOSITORY_NAME
+      - echo $IMAGE_TAG
+      - docker pull $REPOSITORY_URI:$IMAGE_TAG || true
+      - NEW_TAG=`date +%s`
+  build:
+    commands:
+      - echo Build started on `date`
+      - docker build --cache-from $REPOSITORY_URI:$IMAGE_TAG -t $REPOSITORY_URI:$NEW_TAG .
+      - docker tag $REPOSITORY_URI:$NEW_TAG $REPOSITORY_URI:$IMAGE_TAG
+  post_build:
+    commands:
+      - echo Build completed on `date`
+      - echo Pushing the Docker image...
+      - docker image ls -a
+      - docker push $REPOSITORY_URI:$IMAGE_TAG
+      - docker push $REPOSITORY_URI:$NEW_TAG
+      - echo Writing image definitions file...
+      - printf '[{"name":"backend","imageUri":"%s"}]' $REPOSITORY_URI:$NEW_TAG > imagedefinitions.json
+artifacts:
+  files:
+    - imagedefinitions.json

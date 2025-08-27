@@ -1,0 +1,21 @@
+[
+  {
+    "name"      : "backend",
+    "image"     : "${IMAGE}:latest",
+    "cpu"       : ${CPU},
+  "memory"    : ${MEMORY},
+  "essential" : true,
+  "mountPoints": [],
+  "volumesFrom": [],
+  "logConfiguration": {
+  "logDriver": "awslogs",
+  "options": {
+    "awslogs-region"       : "${AWS_REGION}",
+    "awslogs-group"        : "${LOG_GROUP_NAME}",
+    "awslogs-stream-prefix": "ecs-task"
+  }
+},
+  "environment": ${ENVIRONMENT},
+  "secrets": ${SECRETS}
+}
+]
