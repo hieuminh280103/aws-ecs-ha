@@ -1,0 +1,35 @@
+[
+  {
+      "name"      : "backend",
+      "image"     : "${IMAGE}:latest",
+      "cpu"       : ${CPU},
+      "memory"    : ${MEMORY},
+      "essential" : true,
+      "volumesFrom": [],
+      "portMappings" : [
+          {
+              "protocol": "tcp",
+              "containerPort" : ${CONTAINER_PORT},
+              "hostPort"      : 0
+          }
+      ],
+      "logConfiguration": {
+          "logDriver": "awslogs",
+          "options": {
+            "awslogs-region"       : "${AWS_REGION}",
+            "awslogs-group"        : "${LOG_GROUP_NAME}",
+            "awslogs-stream-prefix": "ecs-task"
+          }
+      },
+      "healthCheck": {
+          "command": [ "CMD-SHELL", "curl -f http://localhost:${CONTAINER_PORT}${HEALTH_CHECK_PATH} || exit 1" ],
+          "interval": ${HEALTH_CHECK_INTERVAL},
+          "timeout": ${HEALTH_CHECK_TIMEOUT},
+          "retries": ${HEALTH_CHECK_RETRIES},
+          "startPeriod": ${HEALTH_CHECK_START_PERIOD}
+      },
+      "environment": ${ENVIRONMENT},
+      "secrets": ${SECRETS}
+  }
+]
+
